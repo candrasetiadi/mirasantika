@@ -341,3 +341,67 @@ def get_opname_items_with_item_info(
         q = q.filter(models.StockOpnameItem.status == status)
 
     return q.order_by(models.Item.name.asc()).all()
+
+def get_opname_items_with_item_and_rfid(
+    db: Session,
+    session_id: int,
+    status: str | None = None,
+):
+    # Ambil data item opname + item info
+    rows = (
+        db.query(
+            models.StockOpnameItem.item_id,
+            models.Item.sku,
+            models.Item.name,
+            models.StockOpnameItem.system_qty,
+            models.StockOpnameItem.movement_qty,
+            models.StockOpnameItem.effective_qty,
+            models.StockOpnameItem.counted_qty,
+            models.StockOpnameItem.variance_qty,
+            models.StockOpnameItem.variance_value,
+            models.StockOpnameItem.status,
+        )
+        .join(models.Item, models.Item.id == models.StockOpnameItem.item_id)
+        .filter(models.StockOpnameItem.session_id == session_id)
+    )
+
+    if status:
+        rows = rows.filter(models.StockOpnameItem.status == status)
+
+    rows = rows.all()
+
+    # Ambil semua RFID untuk item-item tsb
+    item_ids = [r.item_id for r in rows]
+
+    rfid_rows = (
+        db.query(models.RFIDTag.item_id, models.RFIDTag.tag_uid)
+        .filter(models.RFIDTag.item_id.in_(item_ids))
+        .filter(models.RFIDTag.status == "ACTIVE")
+        .all()
+    )
+
+    # Group RFID per item_id
+    rfid_map: dict[int, list[str]] = {}
+    for item_id, tag_uid in rfid_rows:
+        rfid_map.setdefault(item_id, []).append(tag_uid)
+
+    # Gabungkan ke response
+    result = []
+    for r in rows:
+        result.append(
+            {
+                "item_id": r.item_id,
+                "sku": r.sku,
+                "name": r.name,
+                "system_qty": r.system_qty,
+                "movement_qty": r.movement_qty,
+                "effective_qty": r.effective_qty,
+                "counted_qty": r.counted_qty,
+                "variance_qty": r.variance_qty,
+                "variance_value": r.variance_value,
+                "status": r.status,
+                "rfid_tags": rfid_map.get(r.item_id, []),
+            }
+        )
+
+    return result
