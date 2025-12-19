@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -58,6 +58,41 @@ class InventoryMovementResponse(BaseModel):
     reason: str
     reference_id: Optional[str]
     created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+class StockOpnameItemResponse(BaseModel):
+    item_id: int
+    sku: str
+    name: str
+
+    system_qty: int
+    movement_qty: int
+    effective_qty: int
+    counted_qty: int
+    variance_qty: int
+    variance_value: int   # kalau mau rupiah bulat
+
+    status: str
+
+    # =========================
+    # FORCE INT CAST
+    # =========================
+    @field_validator(
+        "system_qty",
+        "movement_qty",
+        "effective_qty",
+        "counted_qty",
+        "variance_qty",
+        "variance_value",
+        mode="before",
+    )
+    @classmethod
+    def decimal_to_int(cls, v):
+        if v is None:
+            return 0
+        return int(Decimal(v))
 
     class Config:
         orm_mode = True

@@ -313,3 +313,31 @@ def create_inventory_movement(db: Session, payload: schemas.InventoryMovementCre
     db.commit()
     db.refresh(movement)
     return movement
+
+
+def get_opname_items_with_item_info(
+    db: Session,
+    session_id: int,
+    status: str | None = None,
+):
+    q = (
+        db.query(
+            models.StockOpnameItem.item_id,
+            models.Item.sku,
+            models.Item.name,
+            models.StockOpnameItem.system_qty,
+            models.StockOpnameItem.movement_qty,
+            models.StockOpnameItem.effective_qty,
+            models.StockOpnameItem.counted_qty,
+            models.StockOpnameItem.variance_qty,
+            models.StockOpnameItem.variance_value,
+            models.StockOpnameItem.status,
+        )
+        .join(models.Item, models.Item.id == models.StockOpnameItem.item_id)
+        .filter(models.StockOpnameItem.session_id == session_id)
+    )
+
+    if status:
+        q = q.filter(models.StockOpnameItem.status == status)
+
+    return q.order_by(models.Item.name.asc()).all()

@@ -70,3 +70,23 @@ def submit_scan_batch(
         return session
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get(
+    "/{session_id}/items",
+    response_model=list[schemas.StockOpnameItemResponse],
+)
+def get_session_items(
+    session_id: int,
+    status: str | None = None,  # OK | OVER | SHORT
+    db: Session = Depends(get_db),
+):
+    session = crud.get_session(db, session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    items = crud.get_opname_items_with_item_info(
+        db,
+        session_id=session_id,
+        status=status,
+    )
+    return items
