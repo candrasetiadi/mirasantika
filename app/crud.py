@@ -400,7 +400,7 @@ def get_opname_items_with_item_and_rfid(
                 "variance_qty": r.variance_qty,
                 "variance_value": r.variance_value,
                 "status": r.status,
-                "rfid_tags": rfid_map.get(r.item_id, []),
+                "item_codes": rfid_map.get(r.item_id, []),
             }
         )
 

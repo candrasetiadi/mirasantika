@@ -75,7 +75,7 @@ class StockOpnameItemResponse(BaseModel):
     variance_value: int   # kalau mau rupiah bulat
 
     status: str
-    rfid_tags: List[str]
+    item_codes: List[str]
 
     # =========================
     # FORCE INT CAST
